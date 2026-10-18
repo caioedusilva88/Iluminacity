@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestão de Iluminação</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mut:#667;--bd:#d9dde3;--pri:#1d4ed8;--prit:#fff;--ok:#1f9d55;--warn:#d9480f;--info:#0ea5e9;--par:#b7791f}
+@media(prefers-color-scheme:dark){:root{--bg:#14171a;--card:#1f2327;--tx:#eceff2;--mut:#9aa3ad;--bd:#343a41;--pri:#3b82f6;--prit:#fff;--ok:#3ccf7e;--warn:#ff8a5c;--info:#38bdf8;--par:#f0b429;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:14px;padding-top:max(14px,env(safe-area-inset-top));padding-bottom:max(14px,env(safe-area-inset-bottom))}
+.wrap.wide{max-width:1040px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0 0 10px}h3.pt{font-size:14px;margin:0 0 8px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+.mut{color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+textarea{min-height:70px;resize:vertical}
+button{font:inherit;font-weight:600;padding:12px 16px;border:0;border-radius:10px;background:var(--pri);color:var(--prit);cursor:pointer}
+button:disabled{opacity:.5}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+button.sm{padding:8px 12px;font-size:14px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;padding:10px 2px;background:var(--card);color:var(--tx);border:1px solid var(--bd);font-size:14px}
+.tabs button.on{background:var(--pri);color:var(--prit);border-color:var(--pri)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.t-prog{color:var(--info)}.t-exec{color:var(--ok)}.t-atr{color:var(--warn)}.t-par{color:var(--par)}
+.item h3{margin:0 0 4px;font-size:16px}
+.kv{font-size:14px;margin-top:6px}.kv b{font-weight:600}
+.nums{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.nums span{font-size:13px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:4px 8px}
+.stats,.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.kpis{grid-template-columns:repeat(3,1fr)}
+.stats div,.kpis div{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 4px;text-align:center}
+.stats b,.kpis b{display:block;font-size:22px}.stats span,.kpis span{font-size:12px}
+.reg{border-top:1px dashed var(--bd);margin-top:10px;padding-top:8px}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.alerta{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:13px;border:1px solid var(--bd);background:var(--bg)}.alerta.red{border-color:var(--warn);color:var(--warn)}
+.rei{padding:8px 0;border-top:1px solid var(--bd)}
+.empty{text-align:center;color:var(--mut);padding:24px}
+.err{color:var(--warn);font-size:14px;margin-top:8px}
+/* OS */
+.seg{display:flex;gap:6px}
+.seg button{flex:1;background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:13px 4px}
+.seg button.on{background:var(--pri);color:var(--prit);border-color:var(--pri)}
+.os{border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:14px}
+.chip{display:flex;align-items:center;gap:8px;justify-content:space-between;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:6px 8px;margin-top:6px}
+.chip span{flex:1;font-size:14px}
+.qty{display:flex;gap:8px}.qty input{text-align:center}.qty button{width:60px}
+/* Painel */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:12px}.grid .card{margin:0}
+.cols{display:flex;gap:3px;height:170px}
+.col{flex:1;display:flex;flex-direction:column;cursor:pointer;min-width:0}
+.col em{font-style:normal;font-size:11px;text-align:center;height:14px;color:var(--mut)}
+.col .bar{flex:1;position:relative;border-bottom:1px solid var(--bd)}
+.stk{position:absolute;left:10%;right:10%;bottom:0;display:flex;flex-direction:column-reverse}
+.stk i{display:block}
+.col small{text-align:center;font-size:10px;color:var(--mut);margin-top:3px}
+.col.dim{opacity:.35}.col.sel small{color:var(--tx);font-weight:700}
+.hb{display:flex;align-items:center;gap:8px;margin:8px 0;cursor:pointer;font-size:14px}.hb.dim{opacity:.4}
+.hb .l{width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .t{flex:1;background:var(--bg);border-radius:6px;height:16px;overflow:hidden}.hb .t i{display:block;height:100%}
+.hb b{width:46px;text-align:right}
+.leg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.leg button{padding:5px 9px;font-size:12px;background:var(--bg);color:var(--tx);border:1px solid var(--bd)}.leg button.on{border-color:var(--tx)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chips button{padding:5px 10px;font-size:13px}
+table.mx{width:100%;border-collapse:collapse;font-size:13px}
+.mx th,.mx td{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:right}.mx th:first-child,.mx td:first-child{text-align:left}
+</style></head><body><div class="wrap" id="app"></div>
+<script>
+// ====== CONFIGURAÇÃO ======
+// URL do Apps Script (já configurada)
+const API_URL = "https://script.google.com/macros/s/AKfycbwtjEFfS7KacmIYRfShftz2C4o8FwdbUCjaZhlnWz5IGHgoaP89NhgAMNBlpgVYWe-c/exec";
+// Dados que aparecem no cabeçalho do PDF da OS
+const EMPRESA = "Nome da sua empresa";
+const CONTATO = "Telefone / e-mail";
+// ==========================
+
+const TIPOS=["Lâmpada","LED"],POTS=["100W","150W","250W"],SERVS=["Manutenção","Modernização","Repasse"];
+const SVC=["var(--info)","var(--ok)","var(--par)"];
+const MES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const fmt=d=>d?String(d).split("-").reverse().join("/"):"";
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const ls={get:k=>{try{return localStorage.getItem(k)||""}catch(e){return""}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+
+let user=ls.get("gi_user"),codigo=ls.get("gi_codigo"),tab="agenda",form=null,aviso="",busy=false,loaded=false;
+let cond=[],serv=[],lanc=[],itens=[];
+let fil={ano:String(new Date().getFullYear()),cid:"",tec:"",mes:"",tipo:"",pot:"",sv:"",rd:"90"};
+const novoSel=()=>({tipo:"",pot:"",sv:"",casaRef:"",obs:"",material:""});
+
+async function api(acao,dados){
+  const r=await fetch(API_URL,{method:"POST",body:JSON.stringify({codigo,acao,dados})});
+  const j=await r.json();
+  if(j.erro)throw new Error(j.erro);
+  cond=j.condominios;serv=j.servicos;lanc=j.lancamentos;itens=j.itens||[];loaded=true;
+}
+const regs=i=>lanc.filter(l=>String(l.servicoId)===String(i.id)).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+const soma=(r,k)=>r.reduce((a,x)=>a+(+x[k]||0),0);
+const legado=l=>[["Manutenção","manutencao"],["Modernização","modernizacao"],["Repasse","repasse"]].filter(([n,k])=>+l[k]>0).map(([n,k])=>({tipo:"Não informado",potencia:"—",tipoServico:n,qtd:+l[k]}));
+const itensDe=l=>{const r=itens.filter(i=>String(i.lancamentoId)===String(l.id)).map(i=>({...i,qtd:+i.qtd||0}));return r.length?r:legado(l)};
+function dados(){
+  const g={};itens.forEach(i=>{(g[i.lancamentoId]=g[i.lancamentoId]||[]).push({...i,qtd:+i.qtd||0})});
+  return lanc.map(l=>{const s=serv.find(x=>String(x.id)===String(l.servicoId))||{};
+    return {...l,condominioId:s.condominioId,condominio:s.condominio,its:g[l.id]||legado(l)}});
+}
+
+async function carregar(silencioso){
+  try{await api("listar");aviso=""}catch(e){
+    if(/Código/.test(e.message)){ls.del("gi_codigo");codigo="";aviso=e.message}
+    else aviso="Sem conexão com a planilha. "+(silencioso?"Tentando novamente...":e.message)}
+  render();
+}
+async function executar(fn){
+  busy=true;aviso="";render();
+  try{await fn()}catch(e){aviso="Erro: "+e.message}
+  busy=false;render();
+}
+setInterval(()=>{if(user&&codigo&&!form&&!busy)carregar(true)},45000);
+
+function render(){
+  const a=$("#app");
+  a.className="wrap"+(tab==="painel"&&!form&&loaded?" wide":"");
+  if(!user||!codigo){
+    a.innerHTML=`<div class="card" style="margin-top:10vh"><h1>Gestão de Iluminação</h1><p class="mut">Entre com seu primeiro nome e o código de acesso.</p>
+    <label>Primeiro nome</label><input id="nome" autocapitalize="words" autocomplete="off" value="${esc(user)}">
+    <label>Código de acesso</label><input id="cod" type="password" autocomplete="off">
+    ${aviso?`<div class="err">${esc(aviso)}</div>`:""}
+    <div style="margin-top:14px"><button id="entrar" style="width:100%">Entrar</button></div></div>`;
+    $("#entrar").onclick=async()=>{
+      const v=$("#nome").value.trim().split(/\s+/)[0],c=$("#cod").value.trim();
+      if(!v||!c)return;
+      user=v[0].toUpperCase()+v.slice(1);codigo=c;
+      try{await api("listar");ls.set("gi_user",user);ls.set("gi_codigo",codigo);aviso=""}
+      catch(e){codigo="";aviso=e.message}
+      render();};
+    return;
+  }
+  let h=`<div class="top"><div><h1>Gestão de Iluminação</h1><div class="mut">Olá, ${esc(user)}</div></div><button class="sec sm" id="sair">Sair</button></div>`;
+  if(aviso)h+=`<div class="card err" style="margin-top:0">${esc(aviso)}</div>`;
+  if(!loaded&&!aviso)h+=`<div class="empty">Carregando...</div>`;
+  else if(form){h+=form.kind==="cond"?condForm():form.kind==="plan"?planForm():execForm()}
+  else if(loaded)h+=telaPrincipal();
+  a.innerHTML=h;
+  $("#sair").onclick=()=>{ls.del("gi_user");ls.del("gi_codigo");user="";codigo="";loaded=false;form=null;render()};
+  if(loaded)bind();
+}
+
+function telaPrincipal(){
+  const t=hoje(),prog=serv.filter(i=>i.status==="programado"),par=serv.filter(i=>i.status==="parcial"),atr=prog.filter(i=>i.data<t),ex=serv.filter(i=>i.status==="executado");
+  let h=`<div class="stats"><div><b>${prog.length}</b><span class="mut">Programados</span></div><div><b style="color:var(--par)">${par.length}</b><span class="mut">Parciais</span></div><div><b style="color:var(--warn)">${atr.length}</b><span class="mut">Atrasados</span></div><div><b>${ex.length}</b><span class="mut">Executados</span></div></div>`;
+  h+=`<div class="tabs"><button data-t="agenda" class="${tab==="agenda"?"on":""}">Agenda</button><button data-t="exec" class="${tab==="exec"?"on":""}">Executados</button><button data-t="painel" class="${tab==="painel"?"on":""}">Painel</button><button data-t="cond" class="${tab==="cond"?"on":""}">Condom.</button></div>`;
+  if(tab==="painel")return h+painel();
+  if(tab==="cond"){
+    h+=`<button id="novoC" style="width:100%;margin-bottom:12px">+ Cadastrar condomínio</button>`;
+    h+=cond.length?cond.map(c=>`<div class="card item"><div class="top" style="margin:0"><h3>${esc(c.nome)}</h3>${c.ativo==="nao"?`<span class="tag mut">Inativo</span>`:""}</div>
+      ${c.endereco?`<div class="mut">${esc(c.endereco)}</div>`:""}<div class="kv"><b>Pontos de iluminação:</b> ${esc(c.pontos||0)}</div>${c.obs?`<div class="kv">${esc(c.obs)}</div>`:""}
+      <div class="actions"><button class="sec sm" data-edc="${esc(c.id)}">Editar</button><button class="sec sm" data-atc="${esc(c.id)}">${c.ativo==="nao"?"Reativar":"Desativar"}</button></div></div>`).join(""):`<div class="empty">Nenhum condomínio cadastrado.</div>`;
+    return h;
+  }
+  h+=`<div class="row" style="margin-bottom:12px"><button id="novoP" class="sec">+ Programar</button><button id="novoE">+ Lançar executado</button></div>`;
+  const ult=i=>{const r=regs(i);return r.length?String(r[r.length-1].data):String(i.data)};
+  const lista=tab==="agenda"?[...prog,...par].sort((x,y)=>String(x.data).localeCompare(String(y.data))):ex.sort((x,y)=>ult(y).localeCompare(ult(x)));
+  return h+(lista.length?lista.map(card).join(""):`<div class="empty">Nada por aqui ainda.</div>`);
+}
+
+/* ===== REINCIDÊNCIA ===== */
+const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const addDias=(d,n)=>{const t=new Date(String(d).slice(0,10)+"T12:00:00");t.setDate(t.getDate()+n);return t.toISOString().slice(0,10)};
+let _ev=null,_evSrc=null;
+function eventosManut(){
+  if(_evSrc!==itens){
+    _ev=itens.filter(i=>i.tipoServico==="Manutenção"&&norm(i.casaRef)).map(i=>({id:i.id,cid:i.condominioId,cond:i.condominio,casa:String(i.casaRef).trim(),k:i.condominioId+"|"+norm(i.casaRef),data:String(i.data),lid:i.lancamentoId,os:(serv.find(x=>String(x.id)===String(i.servicoId))||{}).os||""}));
+    _evSrc=itens;
+  }
+  return _ev;
+}
+function reincAviso(cid,casa,lid){
+  if(!cid||!norm(casa))return "";
+  const k=cid+"|"+norm(casa),lim=addDias(hoje(),-90);
+  const ev=eventosManut().filter(e=>e.k===k&&e.lid!==lid).sort((a,b)=>b.data.localeCompare(a.data));
+  if(!ev.length)return "";
+  const rec=ev.filter(e=>e.data>=lim),u=ev[0];
+  return `<div class="alerta ${rec.length?"red":""}">${rec.length?"⚠ Reincidência: ":"Histórico: "}${ev.length} manutenção(ões) anterior(es) nesta casa. Última em ${fmt(u.data)}${u.os?" ("+esc(u.os)+")":""}.${rec.length?` ${rec.length} nos últimos 90 dias.`:""}</div>`;
+}
+function reincTag(i){
+  if(i.tipoServico!=="Manutenção"||!norm(i.casaRef)||!i.data)return "";
+  const k=i.condominioId+"|"+norm(i.casaRef),ini=addDias(i.data,-90);
+  return eventosManut().some(e=>e.k===k&&e.id!==i.id&&e.data<=String(i.data)&&e.data>=ini)?` <span class="tag t-atr">reincidência</span>`:"";
+}
+function cardReinc(){
+  const dias=+fil.rd||90,lim=addDias(hoje(),-dias),g={};
+  eventosManut().forEach(e=>{if(e.data>=lim&&(!fil.cid||e.cid===fil.cid))(g[e.k]=g[e.k]||[]).push(e)});
+  const lista=Object.values(g).filter(a=>a.length>=2).map(a=>a.sort((x,y)=>y.data.localeCompare(x.data))).sort((a,b)=>b.length-a.length||b[0].data.localeCompare(a[0].data)).slice(0,15);
+  return `<div class="card" style="grid-column:1/-1"><div class="top" style="margin-bottom:6px"><h3 class="pt" style="margin:0">Reincidências (casa com 2 ou mais manutenções)</h3>
+   <select id="p_rd" style="width:auto">${[30,60,90,180,365].map(d=>`<option value="${d}" ${d===dias?"selected":""}>Últimos ${d} dias</option>`).join("")}</select></div>
+   ${lista.length?lista.map(a=>`<div class="rei"><b>${esc(a[0].cond)}</b> · ${esc(a[0].casa)} <span class="tag t-atr">${a.length}x</span><div class="mut">${a.map(e=>fmt(e.data)+(e.os?" ("+esc(e.os)+")":"")).join(" · ")}</div></div>`).join(""):`<div class="mut">Nenhuma reincidência no período.</div>`}</div>`;
+}
+
+/* ===== PDF DA OS ===== */
+async function gerarPDF(id){
+  const J=window.jspdf;
+  if(!J){alert("Gerador de PDF indisponível. Verifique a internet e tente de novo.");return}
+  const sv=serv.find(x=>x.id===id);if(!sv)return;
+  const c=cond.find(x=>x.id===sv.condominioId)||{},rs=regs(sv),pts=[];
+  rs.forEach(r=>expandir(r).forEach(i=>pts.push({...i,data:r.data,tecnico:r.tecnico})));
+  pts.forEach((p,n)=>p.ponto=n+1);
+  const doc=new J.jsPDF({unit:"mm",format:"a4"}),W=210,M=14,R=W-M;let y=M;
+  const T=(t,x,yy,o)=>doc.text(t==null?"":(Array.isArray(t)?t:String(t)),x,yy,o);
+  doc.setFont("helvetica","bold");doc.setFontSize(15);T(EMPRESA,M,y+4);
+  doc.setFontSize(9);doc.setFont("helvetica","normal");if(CONTATO)T(CONTATO,M,y+9);
+  doc.setFont("helvetica","bold");doc.setFontSize(13);T("ORDEM DE SERVIÇO",R,y+4,{align:"right"});
+  doc.setFontSize(11);T(sv.os||"",R,y+10,{align:"right"});
+  y+=16;doc.setDrawColor(150);doc.line(M,y,R,y);y+=7;
+  const stt={programado:"Programado",parcial:"Parcial (em andamento)",executado:"Executado"}[sv.status]||sv.status;
+  const datas=rs.map(r=>String(r.data)).sort(),per=datas.length?(datas[0]===datas[datas.length-1]?fmt(datas[0]):fmt(datas[0])+" a "+fmt(datas[datas.length-1])):"-";
+  const equipe=[...new Set([sv.tecnico,...rs.map(r=>r.tecnico)].filter(Boolean))].join(", ")||"-";
+  const campos=[["Condomínio",c.nome||sv.condominio],["Endereço",c.endereco||"-"],["Data programada",fmt(sv.data)],["Execução",per],["Equipe",equipe],["Situação",stt]];
+  const prog=(sv.servico||"")+(+sv.pontos?(sv.servico?" - ":"")+sv.pontos+" ponto(s)":"");
+  if(prog)campos.push(["Programado",prog]);
+  doc.setFontSize(10);
+  campos.forEach(([k,v])=>{doc.setFont("helvetica","bold");T(k+":",M,y);doc.setFont("helvetica","normal");const l=doc.splitTextToSize(String(v||"-"),R-M-36);T(l,M+36,y);y+=5*l.length+1});
+  y+=4;
+  const cols=[["Data",19],["Pt",8],["Tipo",18],["Pot.",13],["Serviço",26],["Casa ref.",28],["Obs. / Material",70]];
+  const head=()=>{doc.setFillColor(230,232,236);doc.rect(M,y-4,R-M,6.5,"F");doc.setFont("helvetica","bold");doc.setFontSize(8.5);let x=M+1;cols.forEach(([n,w])=>{T(n,x,y);x+=w});y+=6;doc.setFont("helvetica","normal")};
+  if(pts.length){
+    head();
+    pts.forEach(p=>{
+      const cel=[fmt(p.data),p.ponto,p.tipo==="Não informado"?"-":p.tipo,p.potencia==="—"?"-":p.potencia,p.tipoServico,p.casaRef||"-",[p.obs,p.material&&"Material: "+p.material].filter(Boolean).join(" | ")||"-"];
+      const ls=cel.map((v,k)=>doc.splitTextToSize(String(v),cols[k][1]-2));
+      const h=Math.max(...ls.map(a=>a.length))*4+2;
+      if(y+h>278){doc.addPage();y=M+4;head()}
+      let x=M+1;ls.forEach((a,k)=>{T(a,x,y);x+=cols[k][1]});
+      y+=h;doc.setDrawColor(220);doc.line(M,y-3,R,y-3);
+    });
+  }else{doc.setFontSize(10);T("Nenhum ponto executado até o momento.",M,y);y+=6}
+  y+=4;if(y>245){doc.addPage();y=M+4}
+  const cnt=f=>pts.filter(f).length;
+  doc.setFont("helvetica","bold");doc.setFontSize(10);T("Resumo",M,y);y+=5;doc.setFont("helvetica","normal");
+  ["Total de pontos: "+pts.length,SERVS.map(s=>s+": "+cnt(p=>p.tipoServico===s)).join("     "),"LED: "+cnt(p=>p.tipo==="LED")+"     Lâmpada: "+cnt(p=>p.tipo==="Lâmpada")].forEach(t=>{T(t,M,y);y+=5});
+  y=Math.max(y+16,255);if(y>272){doc.addPage();y=M+30}
+  doc.setDrawColor(100);doc.line(M,y,M+75,y);doc.line(R-75,y,R,y);doc.setFontSize(9);
+  T("Responsável técnico",M,y+5);T("Síndico / responsável do condomínio",R-75,y+5);
+  const n=doc.getNumberOfPages();
+  for(let q=1;q<=n;q++){doc.setPage(q);doc.setFontSize(8);doc.setTextColor(120);T("Gerado em "+new Date().toLocaleString("pt-BR")+" - "+(sv.os||"")+" - página "+q+"/"+n,M,290)}
+  const nome=(sv.os||"OS")+"-"+String(c.nome||sv.condominio||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g,"-").slice(0,30)+".pdf";
+  try{
+    const file=new File([doc.output("blob")],nome,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:sv.os||"Ordem de serviço"});return}catch(e){if(e.name==="AbortError")return}}
+  }catch(e){}
+  doc.save(nome);
+}
+
+/* ===== PAINEL ===== */
+function colunas(tot,segs){
+  const mx=Math.max(1,...tot);
+  return `<div class="cols">`+tot.map((v,m)=>{const mm=String(m+1).padStart(2,"0");
+    const inner=segs?segs[m].map((q,k)=>q?`<i style="flex:${q} 0 0;background:${SVC[k]}"></i>`:"").join(""):`<i style="flex:1 0 0;background:var(--pri)"></i>`;
+    return `<div class="col ${fil.mes===mm?"sel":""} ${fil.mes&&fil.mes!==mm?"dim":""}" data-f="mes" data-v="${mm}"><em>${v||""}</em><div class="bar"><div class="stk" style="height:${v/mx*100}%">${inner}</div></div><small>${MES[m]}</small></div>`}).join("")+`</div>`;
+}
+function hbars(lista,key,ativo){
+  const mx=Math.max(1,...lista.map(x=>x.v));
+  return lista.length?lista.map(x=>`<div class="hb ${ativo&&ativo!==x.k?"dim":""}" data-f="${key}" data-v="${esc(x.k)}"><span class="l">${esc(x.label)}</span><span class="t"><i style="width:${x.v/mx*100}%;background:${x.c||"var(--pri)"}"></i></span><b>${x.v}</b></div>`).join(""):`<div class="mut">Sem dados.</div>`;
+}
+function painel(){
+  const f=fil,L=dados();
+  const anos=[...new Set([String(new Date().getFullYear()),...L.map(l=>String(l.data).slice(0,4))])].filter(a=>/^\d{4}$/.test(a)).sort().reverse();
+  const tecs=[...new Set(lanc.map(l=>l.tecnico).filter(Boolean))].sort();
+  const base=L.filter(l=>String(l.data).slice(0,4)===f.ano&&(!f.cid||l.condominioId===f.cid)&&(!f.tec||l.tecnico===f.tec));
+  const ok=i=>(!f.tipo||i.tipo===f.tipo)&&(!f.pot||i.potencia===f.pot)&&(!f.sv||i.tipoServico===f.sv);
+  const itf=!!(f.tipo||f.pot||f.sv);
+  const mesDe=l=>String(l.data).slice(5,7);
+  const noMes=l=>!f.mes||mesDe(l)===f.mes;
+  const vSem=base.filter(l=>!itf||l.its.some(ok));
+  const vMes=vSem.filter(noMes);
+  const flat=ls=>ls.flatMap(l=>l.its.filter(ok).map(i=>({...i,l})));
+  const iSem=flat(base),iMes=flat(base.filter(noMes));
+  const por=(arr,fn)=>{const m={};arr.forEach(i=>{const k=fn(i);m[k]=(m[k]||0)+i.qtd});return m};
+  const mesV=Array(12).fill(0);vSem.forEach(l=>{const m=+mesDe(l)-1;if(m>=0&&m<12)mesV[m]++});
+  const mesS=Array.from({length:12},()=>[0,0,0]);
+  iSem.forEach(i=>{const m=+mesDe(i.l)-1,k=SERVS.indexOf(i.tipoServico);if(m>=0&&m<12&&k>=0)mesS[m][k]+=i.qtd});
+  const mesT=mesS.map(a=>a.reduce((x,y)=>x+y,0));
+  const total=iMes.reduce((a,i)=>a+i.qtd,0),bySv=por(iMes,i=>i.tipoServico),pontos=vMes.reduce((a,l)=>a+(+l.pontos||0),0);
+  const kp=(n,l,c)=>`<div><b ${c?`style="color:${c}"`:""}>${n}</b><span class="mut">${l}</span></div>`;
+  const tipoL=Object.entries(por(iMes,i=>i.tipo)).map(([k,v])=>({k,label:k,v,c:k==="LED"?"var(--ok)":k==="Lâmpada"?"var(--par)":"var(--mut)"}));
+  const potL=Object.entries(por(iMes,i=>i.potencia)).sort().map(([k,v])=>({k,label:k,v}));
+  const svL=SERVS.map((k,n)=>({k,label:k,v:bySv[k]||0,c:SVC[n]}));
+  const nomeC=id=>(cond.find(c=>c.id===id)||{}).nome||"(sem condomínio)";
+  const condL=Object.entries(por(iMes,i=>i.l.condominioId)).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>({k,label:nomeC(k),v}));
+  const mx={};iMes.forEach(i=>{const k=i.tipo+"|"+i.potencia;(mx[k]=mx[k]||[0,0,0])[Math.max(0,SERVS.indexOf(i.tipoServico))]+=i.qtd});
+  const mxRows=Object.entries(mx).sort().map(([k,a])=>`<tr><td>${esc(k.replace("|"," "))}</td>${a.map(x=>`<td>${x||"-"}</td>`).join("")}<td><b>${a.reduce((x,y)=>x+y,0)}</b></td></tr>`).join("");
+  const nomes={mes:v=>MES[+v-1],tipo:v=>v,pot:v=>v,sv:v=>v};
+  const chips=["mes","tipo","pot","sv"].filter(k=>f[k]).map(k=>`<button class="sec" data-f="${k}" data-v="${esc(f[k])}">${esc(nomes[k](f[k]))} ✕</button>`).join("");
+  return `<div class="card"><div class="row">
+    <div><label style="margin-top:0">Ano</label><select id="p_ano">${anos.map(a=>`<option ${a===f.ano?"selected":""}>${a}</option>`).join("")}</select></div>
+    <div><label style="margin-top:0">Condomínio</label><select id="p_cid"><option value="">Todos</option>${cond.map(c=>`<option value="${esc(c.id)}" ${c.id===f.cid?"selected":""}>${esc(c.nome)}</option>`).join("")}</select></div>
+    <div><label style="margin-top:0">Técnico</label><select id="p_tec"><option value="">Todos</option>${tecs.map(t=>`<option ${t===f.tec?"selected":""}>${esc(t)}</option>`).join("")}</select></div></div>
+    <div class="chips">${chips}${chips?`<button class="sec" id="limpar">Limpar filtros</button>`:`<span class="mut">Toque nos gráficos para filtrar.</span>`}</div></div>
+  <div class="kpis">${kp(vMes.length,"Visitas")}${kp(total,"Itens executados")}${kp(pontos,"Pontos atendidos")}${kp(bySv["Manutenção"]||0,"Manutenção",SVC[0])}${kp(bySv["Modernização"]||0,"Modernização",SVC[1])}${kp(bySv["Repasse"]||0,"Repasse",SVC[2])}</div>
+  <div class="grid">
+   <div class="card"><h3 class="pt">Visitas por mês</h3>${colunas(mesV)}</div>
+   <div class="card"><h3 class="pt">Execuções por mês</h3>${colunas(mesT,mesS)}<div class="leg">${SERVS.map((s,n)=>`<button class="${f.sv===s?"on":""}" data-f="sv" data-v="${s}"><span style="color:${SVC[n]}">●</span> ${s}</button>`).join("")}</div></div>
+   <div class="card"><h3 class="pt">LED x Lâmpada</h3>${hbars(tipoL,"tipo",f.tipo)}</div>
+   <div class="card"><h3 class="pt">Potência</h3>${hbars(potL,"pot",f.pot)}</div>
+   <div class="card"><h3 class="pt">Tipo de serviço</h3>${hbars(svL,"sv",f.sv)}</div>
+   <div class="card"><h3 class="pt">Por condomínio (top 8)</h3>${hbars(condL,"cid",f.cid)}</div>
+   ${cardReinc()}
+   <div class="card" style="grid-column:1/-1;overflow-x:auto"><h3 class="pt">Resumo: tipo e potência x serviço</h3>
+    ${mxRows?`<table class="mx"><tr><th></th><th>Manut.</th><th>Modern.</th><th>Repasse</th><th>Total</th></tr>${mxRows}</table>`:`<div class="mut">Sem dados.</div>`}
+    <div style="margin-top:12px"><button class="sec sm" id="csv">Baixar CSV (itens filtrados)</button></div></div>
+  </div>`;
+}
+function baixarCsv(){
+  const L=dados(),f=fil;
+  const ok=i=>(!f.tipo||i.tipo===f.tipo)&&(!f.pot||i.potencia===f.pot)&&(!f.sv||i.tipoServico===f.sv);
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const linhas=[["Data","Condomínio","Técnico","OS","Tipo","Potência","Serviço","Quantidade","Casa de referência","Observações","Material"]];
+  L.filter(l=>String(l.data).slice(0,4)===f.ano&&(!f.mes||String(l.data).slice(5,7)===f.mes)&&(!f.cid||l.condominioId===f.cid)&&(!f.tec||l.tecnico===f.tec))
+   .forEach(l=>l.its.filter(ok).forEach(i=>linhas.push([l.data,l.condominio,l.tecnico,l.os,i.tipo,i.potencia,i.tipoServico,i.qtd,i.casaRef,i.obs,i.material])));
+  const blob=new Blob(["\ufeff"+linhas.map(r=>r.map(q).join(";")).join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="execucoes-"+f.ano+".csv";document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ===== LISTAS ===== */
+function regHtml(r){
+  const its=itensDe(r),ag={};
+  its.forEach(i=>{const k=(i.tipo!=="Não informado"?i.tipo+" "+i.potencia+" · ":"")+i.tipoServico;ag[k]=(ag[k]||0)+i.qtd});
+  return `<div class="reg"><div class="mut"><b>${fmt(r.data)}</b> · ${esc(r.tecnico)}${+r.pontos?` · ${esc(r.pontos)} pontos`:""}</div>
+  ${its.length?`<div class="nums">${Object.entries(ag).map(([k,v])=>`<span>${esc(k)}: <b>${v}</b></span>`).join("")}</div>`:""}
+  ${its.map((i,n)=>det(i)?`<div class="kv"><b>Ponto ${i.ponto||n+1}</b> (${esc(i.tipo)} ${esc(i.potencia)} · ${esc(i.tipoServico)})${reincTag(i)}${det(i)}</div>`:"").join("")}
+  ${!its.some(i=>i.casaRef||i.obs||i.material)?`${r.casaRef?`<div class="kv"><b>Casa de referência:</b> ${esc(r.casaRef)}</div>`:""}${r.servico?`<div class="kv"><b>Observações:</b> ${esc(r.servico)}</div>`:""}${r.material?`<div class="kv"><b>Material:</b> ${esc(r.material)}</div>`:""}`:""}</div>`;
+}
+function card(i){
+  const atr=i.status==="programado"&&i.data<hoje(),r=regs(i);
+  const tag=i.status==="executado"?`<span class="tag t-exec">Executado</span>`:i.status==="parcial"?`<span class="tag t-par">Parcial</span>`:atr?`<span class="tag t-atr">Atrasado</span>`:`<span class="tag t-prog">Programado</span>`;
+  let h=`<div class="card item"><div class="top" style="margin:0"><h3>${esc(i.condominio)}</h3>${tag}</div>${i.os?`<div class="kv" style="margin-top:0"><b>${esc(i.os)}</b></div>`:""}`;
+  if(i.status==="programado")h+=`<div class="mut">${fmt(i.data)} · Equipe: ${esc(i.tecnico)}${+i.pontos?` · ${esc(i.pontos)} pontos`:""}</div>${i.servico?`<div class="kv"><b>Serviço programado:</b> ${esc(i.servico)}</div>`:""}`;
+  else{
+    if(i.servico||+i.pontos)h+=`<div class="mut">Programado: ${esc(i.servico)}${+i.pontos?` · ${esc(i.pontos)} pontos`:""}</div>`;
+    h+=`<div class="nums"><span>Pontos feitos: <b>${soma(r,"pontos")}</b></span><span>Manut.: ${soma(r,"manutencao")}</span><span>Modern.: ${soma(r,"modernizacao")}</span><span>Repasse: ${soma(r,"repasse")}</span></div>`+r.map(regHtml).join("");
+    if(i.status==="parcial")h+=`<div class="kv" style="color:var(--par)"><b>Falta terminar.</b> Toque em Continuar para lançar o restante.</div>`;
+  }
+  return h+`<div class="actions">${i.status!=="executado"?`<button class="sm" data-ex="${esc(i.id)}">${i.status==="parcial"?"Continuar / finalizar":"Executar"}</button>`:""}<button class="sec sm" data-pdf="${esc(i.id)}">PDF da OS</button><button class="sec sm" data-ed="${esc(i.id)}">Editar</button><button class="sec sm" data-del="${esc(i.id)}">Excluir</button></div></div>`;
+}
+
+/* ===== FORMULÁRIOS ===== */
+const optCond=sel=>{const l=cond.filter(c=>c.ativo!=="nao"||c.id===sel);return `<option value="">Selecione...</option>`+l.map(c=>`<option value="${esc(c.id)}" ${c.id===sel?"selected":""}>${esc(c.nome)}</option>`).join("")};
+const btns=`<div class="actions"><button id="salvar" style="flex:1" ${busy?"disabled":""}>${busy?"Salvando...":"Salvar"}</button><button class="sec" id="cancelar" ${busy?"disabled":""}>Cancelar</button></div>`;
+function condForm(){const f=form;return `<div class="card"><h2>${f.id?"Editar":"Novo"} condomínio</h2>
+  <label>Nome</label><input id="f_nome" value="${esc(f.nome)}"><label>Endereço</label><input id="f_endereco" value="${esc(f.endereco)}">
+  <label>Total de pontos do condomínio (opcional, só informativo)</label><input id="f_pontos" type="number" min="0" inputmode="numeric" value="${esc(f.pontos??"")}">
+  <label>Observações</label><textarea id="f_obs">${esc(f.obs)}</textarea>${btns}</div>`}
+function planForm(){const f=form;return `<div class="card"><h2>Serviço programado</h2>
+  <div class="mut">${f.os?esc(f.os):"O número da OS é gerado ao salvar."}</div>
+  ${cond.some(c=>c.ativo!=="nao")?"":`<div class="err">Nenhum condomínio ativo. Cadastre na aba Condom.</div>`}
+  <label>Condomínio</label><select id="f_cid">${optCond(f.condominioId)}</select>
+  <div class="row"><div><label>Data</label><input type="date" id="f_data" value="${esc(f.data)}"></div><div><label>Equipe / técnico(s)</label><input id="f_tecnico" value="${esc(f.tecnico)}"></div></div>
+  <label>Quantidade de pontos a atender</label><input type="number" min="0" inputmode="numeric" id="f_pontos" value="${esc(f.pontos??"")}">
+  <label>Serviço a executar</label><textarea id="f_servico">${esc(f.servico)}</textarea>${btns}</div>`}
+const grp=(k,lista,val)=>`<div class="seg">${lista.map(x=>`<button type="button" class="${val===x?"on":""}" data-sel="${k}" data-v="${esc(x)}">${x}</button>`).join("")}</div>`;
+const det=i=>{const d=[i.casaRef&&"Casa ref.: "+i.casaRef,i.obs&&"Obs.: "+i.obs,i.material&&"Material: "+i.material].filter(Boolean);return d.length?`<br><span class="mut">${esc(d.join(" · "))}</span>`:""};
+function osBuilder(f){
+  const n=f.itens.length+1,s=f.sel;
+  let h=`<div class="os"><b>Pontos da OS (${f.itens.length})</b>`+(f.itens.map((i,k)=>`<div class="chip"><span><b>Ponto ${k+1}:</b> ${esc(i.tipo)} ${esc(i.potencia)} · ${esc(i.tipoServico)}${det(i)}</span><button type="button" class="sec sm" data-rm="${k}">✕</button></div>`).join("")||`<div class="mut">Nenhum ponto adicionado ainda.</div>`);
+  if(f.aberto)h+=`<div class="os" style="background:var(--bg)"><b>Ponto ${n}</b><label>Tipo</label>${grp("tipo",TIPOS,s.tipo)}<label>Potência</label>${grp("pot",POTS,s.pot)}<label>Serviço</label>${grp("sv",SERVS,s.sv)}
+    <label>Casa de referência</label><input id="f_pcasa" value="${esc(s.casaRef)}"><div id="reinc">${reincAviso(f.condominioId,s.casaRef,f._lid)}</div>
+    <label>Observações do serviço</label><textarea id="f_pobs">${esc(s.obs)}</textarea>
+    <label>Material utilizado</label><textarea id="f_pmat">${esc(s.material)}</textarea>
+    <div class="actions"><button type="button" id="confp" style="flex:1">Confirmar ponto ${n}</button><button type="button" class="sec" id="cancp">Cancelar</button></div></div>`;
+  else h+=`<div class="actions"><button type="button" id="abrir" style="flex:1">+ Adicionar ponto ${n}</button>${f.itens.length?`<button type="button" class="sec" id="rep">Repetir tipo do último</button>`:""}</div>`;
+  return h+`</div>`;
+}
+function execForm(){
+  const f=form,os=(serv.find(x=>x.id===f._id)||{}).os;
+  return `<div class="card"><h2>${f._id&&f._edit==null?"Executar":"Serviço executado"}</h2>
+  <div class="mut">${os?esc(os):"O número da OS é gerado ao salvar."}</div>
+  ${f.plano?`<div class="mut">Programado: ${esc(f.plano)}</div>`:""}
+  <label>Condomínio</label><select id="f_cid" ${f._id?"disabled":""}>${optCond(f.condominioId)}</select>
+  <div class="row"><div><label>Data</label><input type="date" id="f_data" value="${esc(f.data)}"></div><div><label>Técnico(s)</label><input id="f_tecnico" value="${esc(f.tecnico)}"></div></div>
+  ${osBuilder(f)}
+  <div class="actions"><button id="encerrar" style="flex:1" ${busy?"disabled":""}>${busy?"Salvando...":"Encerrar OS"}</button><button class="sec" id="parcial" ${busy?"disabled":""}>Salvar parcial</button><button class="sec" id="cancelar" ${busy?"disabled":""}>Cancelar</button></div></div>`;
+}
+function snap(){
+  const f=form,g=k=>$("#f_"+k);
+  ["data","tecnico"].forEach(k=>{if(g(k))f[k]=g(k).value});
+  if(g("cid")&&!g("cid").disabled)f.condominioId=g("cid").value;
+  if($("#f_pcasa")){f.sel.casaRef=$("#f_pcasa").value;f.sel.obs=$("#f_pobs").value;f.sel.material=$("#f_pmat").value}
+}
+const expandir=l=>{const e=[];itensDe(l).forEach(x=>{for(let k=0;k<(x.qtd||1);k++)e.push({ponto:e.length+1,tipo:x.tipo,potencia:x.potencia,tipoServico:x.tipoServico,qtd:1,casaRef:x.casaRef||"",obs:x.obs||"",material:x.material||""})});
+  if(e.length&&!e.some(x=>x.casaRef||x.obs||x.material)){e[0].casaRef=l.casaRef||"";e[0].obs=l.servico||"";e[0].material=l.material||""}
+  return e};
+const novoExec=x=>({kind:"exec",data:hoje(),tecnico:user,itens:[],sel:novoSel(),aberto:false,...x});
+
+/* ===== EVENTOS ===== */
+function bind(){
+  const on=(s,fn)=>document.querySelectorAll(s).forEach(fn),t=hoje();
+  on(".tabs button",b=>b.onclick=()=>{tab=b.dataset.t;render()});
+  on("[data-f]",b=>b.onclick=()=>{const k=b.dataset.f,v=b.dataset.v;fil[k]=fil[k]===v?"":v;render()});
+  ["ano","cid","tec"].forEach(k=>{if($("#p_"+k))$("#p_"+k).onchange=e=>{fil[k]=e.target.value;render()}});
+  if($("#p_rd"))$("#p_rd").onchange=e=>{fil.rd=e.target.value;render()};
+  if($("#limpar"))$("#limpar").onclick=()=>{fil.mes=fil.tipo=fil.pot=fil.sv="";render()};
+  if($("#csv"))$("#csv").onclick=baixarCsv;
+  if($("#novoC"))$("#novoC").onclick=()=>{form={kind:"cond"};render()};
+  if($("#novoP"))$("#novoP").onclick=()=>{form={kind:"plan",data:t,tecnico:user};render()};
+  if($("#novoE"))$("#novoE").onclick=()=>{form=novoExec();render()};
+  on("[data-edc]",b=>b.onclick=()=>{form={kind:"cond",...cond.find(c=>c.id===b.dataset.edc)};render()});
+  on("[data-atc]",b=>b.onclick=()=>executar(()=>{const c=cond.find(x=>x.id===b.dataset.atc);return api("salvarCondominio",{...c,ativo:c.ativo==="nao"?"sim":"nao"})}));
+  on("[data-ex]",b=>b.onclick=()=>{const i=serv.find(x=>x.id===b.dataset.ex);form=novoExec({_id:i.id,condominioId:i.condominioId,plano:(i.servico||"")+(+i.pontos?" · "+i.pontos+" pontos":"")});render()});
+  on("[data-ed]",b=>b.onclick=()=>{const i=serv.find(x=>x.id===b.dataset.ed);
+    if(i.status==="programado")form={kind:"plan",_id:i.id,condominioId:i.condominioId,data:i.data,tecnico:i.tecnico,servico:i.servico,pontos:i.pontos,os:i.os};
+    else{const r=regs(i),l=r[r.length-1]||{};form=novoExec({...l,_id:i.id,_lid:l.id,_edit:1,condominioId:i.condominioId,itens:expandir(l)})}
+    render()});
+  on("[data-del]",b=>b.onclick=()=>{if(confirm("Excluir este serviço e seus lançamentos?"))executar(()=>api("excluirServico",{id:b.dataset.del}))});
+  on("[data-sel]",b=>b.onclick=()=>{snap();form.sel[b.dataset.sel]=b.dataset.v;render()});
+  on("[data-rm]",b=>b.onclick=()=>{snap();form.itens.splice(+b.dataset.rm,1);form.itens.forEach((x,k)=>x.ponto=k+1);render()});
+  if($("#f_pcasa"))$("#f_pcasa").oninput=e=>{const c=($("#f_cid")||{}).value||form.condominioId;$("#reinc").innerHTML=reincAviso(c,e.target.value,form._lid)};
+  on("[data-pdf]",b=>b.onclick=()=>gerarPDF(b.dataset.pdf));
+  if($("#abrir"))$("#abrir").onclick=()=>{snap();form.aberto=true;form.sel=novoSel();render()};
+  if($("#cancp"))$("#cancp").onclick=()=>{snap();form.aberto=false;render()};
+  if($("#confp"))$("#confp").onclick=()=>{snap();const s=form.sel;if(!s.tipo||!s.pot||!s.sv){alert("Escolha tipo, potência e serviço do ponto.");return}form.itens.push({ponto:form.itens.length+1,tipo:s.tipo,potencia:s.pot,tipoServico:s.sv,qtd:1,casaRef:s.casaRef.trim(),obs:s.obs.trim(),material:s.material.trim()});form.aberto=false;form.sel=novoSel();render()};
+  if($("#rep"))$("#rep").onclick=()=>{snap();const l=form.itens[form.itens.length-1];form.aberto=true;form.sel={...novoSel(),tipo:l.tipo,pot:l.potencia,sv:l.tipoServico};render()};
+  if($("#encerrar"))$("#encerrar").onclick=()=>salvar("concluido");
+  if($("#parcial"))$("#parcial").onclick=()=>salvar("parcial");
+  if($("#cancelar"))$("#cancelar").onclick=()=>{form=null;render()};
+  if($("#salvar"))$("#salvar").onclick=()=>salvar();
+}
+function salvar(res){
+  const g=k=>($("#f_"+k)?.value||"").trim(),f=form;
+  if(f.kind==="cond"){
+    if(!g("nome")){alert("Informe o nome.");return}
+    const o={id:f.id||uid("c"),nome:g("nome"),endereco:g("endereco"),pontos:+g("pontos")||0,obs:g("obs"),ativo:f.ativo||"sim"};
+    Object.assign(f,{nome:o.nome,endereco:o.endereco,pontos:o.pontos,obs:o.obs});
+    return executar(async()=>{await api("salvarCondominio",o);form=null});
+  }
+  const cid=f._id?f.condominioId:g("cid"),c=cond.find(x=>x.id===cid);
+  if(!c||!g("data")){alert("Selecione o condomínio e informe a data.");return}
+  const old=f._id?serv.find(x=>x.id===f._id):null;
+  if(f.kind==="plan"){
+    const o={id:f._id||uid("s"),condominioId:c.id,condominio:c.nome,data:g("data"),tecnico:g("tecnico"),servico:g("servico"),pontos:+g("pontos")||0,os:old?.os||"",status:old?.status||"programado"};
+    Object.assign(f,{condominioId:c.id,data:o.data,tecnico:o.tecnico,servico:o.servico,pontos:o.pontos});
+    return executar(async()=>{await api("salvarServico",o);form=null});
+  }
+  snap();
+  if(f.aberto){alert("Confirme ou cancele o ponto em aberto.");return}
+  if(!f.itens.length){alert("Adicione ao menos um ponto na OS.");return}
+  const sv=old?{...old}:{id:uid("s"),condominioId:c.id,condominio:c.nome,data:g("data"),tecnico:g("tecnico"),servico:"",pontos:0,os:"",status:"programado"};
+  const lid=f._lid||uid("l");
+  const its=f.itens.map((i,n)=>({id:lid+"_"+n,lancamentoId:lid,servicoId:sv.id,data:g("data"),condominioId:c.id,condominio:c.nome,tecnico:g("tecnico"),tipo:i.tipo,potencia:i.potencia,tipoServico:i.tipoServico,qtd:1,ponto:n+1,casaRef:i.casaRef||"",obs:i.obs||"",material:i.material||""}));
+  const tot=k=>its.filter(i=>i.tipoServico===k).length;
+  const l={id:lid,servicoId:sv.id,data:g("data"),tecnico:g("tecnico"),pontos:its.length,manutencao:tot("Manutenção"),modernizacao:tot("Modernização"),repasse:tot("Repasse"),casaRef:"",servico:"",material:"",por:user,os:sv.os||""};
+  executar(async()=>{await api("salvarLancamento",{lanc:l,servico:sv,itens:its,status:res==="parcial"?"parcial":"executado"});form=null});
+}
+render();
+if(user&&codigo)carregar();
+</script></body></html>
